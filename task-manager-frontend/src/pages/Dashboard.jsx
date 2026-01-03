@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { Box, Text, Button } from "@chakra-ui/react";
+import {
+  Box,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Flex,
+  Heading,
+  Avatar,
+  Divider,
+  Grid,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import {
   PieChart,
@@ -9,7 +21,8 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import api from "../services/api";
 
@@ -17,6 +30,8 @@ const COLORS = ["#3182CE", "#ECC94B", "#38A169"];
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,139 +42,572 @@ export default function Dashboard() {
       })
       .catch((err) => {
         console.error("Dashboard API error:", err);
-
-        // 🔒 Invalid / expired token → force logout
         localStorage.removeItem("token");
         navigate("/login");
       });
   }, [navigate]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   if (!data) {
     return (
-      <Box p={6}>
-        <Text>Loading dashboard...</Text>
-      </Box>
+      <Flex h="100vh" align="center" justify="center" bg="gray.50">
+        <VStack spacing={4}>
+          <Box
+            w={16}
+            h={16}
+            border="4px"
+            borderColor="blue.500"
+            borderTopColor="transparent"
+            rounded="full"
+            animation="spin 1s linear infinite"
+          />
+          <Text fontSize="lg" color="gray.600">
+            Loading dashboard...
+          </Text>
+        </VStack>
+      </Flex>
     );
   }
 
   const statusChartData = data.charts.statusChart.labels.map((label, i) => ({
     name: label,
-    value: data.charts.statusChart.data[i]
+    value: data.charts.statusChart.data[i],
   }));
 
   const completionData = data.charts.completionReopenChart.labels.map(
     (label, i) => ({
       name: label,
-      value: data.charts.completionReopenChart.data[i]
+      value: data.charts.completionReopenChart.data[i],
     })
   );
 
+  const menuItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      ),
+    },
+    {
+      id: "tasks",
+      label: "Tasks",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 11l3 3L22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+      ),
+      onClick: () => navigate("/tasks"),
+    },
+    {
+      id: "visualization",
+      label: "Visualization",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+      onClick: () => navigate("/visualizations"),
+    },
+    {
+      id: "friends",
+      label: "Friends",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      id: "teams",
+      label: "Teams",
+      icon: (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
-    <Box p={6}>
-      {/* HEADER */}
+    <Flex h="100vh" bg="gray.50">
+      {/* Sidebar */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={6}
+        w={isSidebarOpen ? "280px" : "80px"}
+        bg="white"
+        borderRight="1px"
+        borderColor="gray.200"
+        transition="all 0.3s"
+        position="relative"
       >
-        <Text fontSize="2xl" fontWeight="bold">
-          Dashboard
-        </Text>
+        <VStack h="full" spacing={0} align="stretch">
+          {/* Logo/Header */}
+          <Box p={6} borderBottom="1px" borderColor="gray.200">
+            <HStack spacing={3}>
+              <Box
+                w={12}
+                h={12}
+                bgGradient="linear(to-br, blue.500, indigo.600)"
+                rounded="xl"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                flexShrink={0}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              </Box>
+              {isSidebarOpen && (
+                <Box>
+                  <Text fontSize="lg" fontWeight="bold" color="gray.800">
+                    TaskFlow
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Manage & Track
+                  </Text>
+                </Box>
+              )}
+            </HStack>
+          </Box>
 
-        <Box>
-          <Button mr={3} onClick={() => navigate("/tasks")}>
-            Tasks
-          </Button>
+          {/* User Profile */}
+          {isSidebarOpen && (
+            <Box p={4} borderBottom="1px" borderColor="gray.200">
+              <HStack spacing={3}>
+                <Avatar
+                  size="md"
+                  name="User Name"
+                  bg="blue.500"
+                  color="white"
+                />
+                <Box flex={1}>
+                  <Text fontSize="sm" fontWeight="bold" color="gray.800">
+                    User Name
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    user@email.com
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+          )}
 
-          <Button
-            colorScheme="red"
-            onClick={() => {
-              localStorage.removeItem("token");
-              navigate("/login");
-            }}
-          >
-            Logout
-          </Button>
-        </Box>
-      </Box>
+          {/* Menu Items */}
+          <VStack flex={1} spacing={2} p={4} align="stretch">
+            {menuItems.map((item) => (
+              <Button
+                key={item.id}
+                onClick={item.onClick || (() => setActiveSection(item.id))}
+                justifyContent="flex-start"
+                variant="ghost"
+                colorScheme={activeSection === item.id ? "blue" : "gray"}
+                bg={activeSection === item.id ? "blue.50" : "transparent"}
+                color={activeSection === item.id ? "blue.600" : "gray.700"}
+                size="lg"
+                leftIcon={item.icon}
+                _hover={{
+                  bg: activeSection === item.id ? "blue.100" : "gray.100",
+                }}
+                transition="all 0.2s"
+              >
+                {isSidebarOpen && item.label}
+              </Button>
+            ))}
+          </VStack>
 
-      {/* KPI CARDS */}
-      <Box
-        display="grid"
-        gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
-        gap={4}
-        mb={10}
-      >
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text fontSize="sm">Total Tasks</Text>
-          <Text fontSize="2xl" fontWeight="bold">
-            {data.cards.totalTasks}
-          </Text>
-        </Box>
-
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text fontSize="sm">Completed</Text>
-          <Text fontSize="2xl" fontWeight="bold">
-            {data.cards.completedTasks}
-          </Text>
-        </Box>
-
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text fontSize="sm">Reopened</Text>
-          <Text fontSize="2xl" fontWeight="bold">
-            {data.cards.reopenedTasks}
-          </Text>
-        </Box>
-
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text fontSize="sm">Avg Completion (min)</Text>
-          <Text fontSize="2xl" fontWeight="bold">
-            {data.cards.avgCompletionTimeMinutes ?? "-"}
-          </Text>
-        </Box>
-      </Box>
-
-      {/* CHARTS */}
-      <Box
-        display="grid"
-        gridTemplateColumns="repeat(auto-fit, minmax(320px, 1fr))"
-        gap={8}
-      >
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text mb={4} fontWeight="semibold">
-            Task Status Distribution
-          </Text>
-
-          <PieChart width={300} height={300}>
-            <Pie
-              data={statusChartData}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={100}
-              label
+          {/* Logout Button */}
+          <Box p={4} borderTop="1px" borderColor="gray.200">
+            <Button
+              onClick={handleLogout}
+              width="full"
+              colorScheme="red"
+              variant="ghost"
+              justifyContent="flex-start"
+              leftIcon={
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              }
+              _hover={{
+                bg: "red.50",
+              }}
             >
-              {statusChartData.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </Box>
+              {isSidebarOpen && "Logout"}
+            </Button>
 
-        <Box p={4} border="1px solid #e2e8f0" borderRadius="md">
-          <Text mb={4} fontWeight="semibold">
-            Completion vs Reopen
-          </Text>
+            {/* Toggle Sidebar */}
+            <Button
+              mt={2}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              width="full"
+              variant="ghost"
+              size="sm"
+              color="gray.600"
+            >
+              {isSidebarOpen ? "←" : "→"}
+            </Button>
+          </Box>
+        </VStack>
+      </Box>
 
-          <BarChart width={300} height={300} data={completionData}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#3182CE" />
-          </BarChart>
+      {/* Main Content */}
+      <Box flex={1} overflowY="auto" bg="gray.50">
+        <Box p={8}>
+          {/* Header */}
+          <Box mb={8}>
+            <Heading
+              size="2xl"
+              mb={2}
+              bgGradient="linear(to-r, blue.600, indigo.600)"
+              bgClip="text"
+            >
+              Dashboard Overview
+            </Heading>
+            <Text color="gray.600">
+              Welcome back! Here's what's happening with your tasks today.
+            </Text>
+          </Box>
+
+          {/* KPI Cards */}
+          <Grid
+            templateColumns={{
+              base: "1fr",
+              md: "repeat(2, 1fr)",
+              lg: "repeat(4, 1fr)",
+            }}
+            gap={6}
+            mb={8}
+          >
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+              _hover={{
+                shadow: "lg",
+                transform: "translateY(-2px)",
+              }}
+              transition="all 0.2s"
+            >
+              <HStack spacing={4}>
+                <Box
+                  w={12}
+                  h={12}
+                  bg="blue.100"
+                  rounded="xl"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#3182CE"
+                    strokeWidth="2"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                    Total Tasks
+                  </Text>
+                  <Text fontSize="3xl" fontWeight="bold" color="gray.800">
+                    {data.cards.totalTasks}
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+              _hover={{
+                shadow: "lg",
+                transform: "translateY(-2px)",
+              }}
+              transition="all 0.2s"
+            >
+              <HStack spacing={4}>
+                <Box
+                  w={12}
+                  h={12}
+                  bg="green.100"
+                  rounded="xl"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#38A169"
+                    strokeWidth="2"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                    Completed
+                  </Text>
+                  <Text fontSize="3xl" fontWeight="bold" color="gray.800">
+                    {data.cards.completedTasks}
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+              _hover={{
+                shadow: "lg",
+                transform: "translateY(-2px)",
+              }}
+              transition="all 0.2s"
+            >
+              <HStack spacing={4}>
+                <Box
+                  w={12}
+                  h={12}
+                  bg="orange.100"
+                  rounded="xl"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#DD6B20"
+                    strokeWidth="2"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                    Reopened
+                  </Text>
+                  <Text fontSize="3xl" fontWeight="bold" color="gray.800">
+                    {data.cards.reopenedTasks}
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+              _hover={{
+                shadow: "lg",
+                transform: "translateY(-2px)",
+              }}
+              transition="all 0.2s"
+            >
+              <HStack spacing={4}>
+                <Box
+                  w={12}
+                  h={12}
+                  bg="purple.100"
+                  rounded="xl"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#805AD5"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                    Avg Time (min)
+                  </Text>
+                  <Text fontSize="3xl" fontWeight="bold" color="gray.800">
+                    {data.cards.avgCompletionTimeMinutes ?? "-"}
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+          </Grid>
+
+          {/* Charts */}
+          <Grid
+            templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }}
+            gap={6}
+          >
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+            >
+              <Text fontSize="lg" fontWeight="bold" mb={6} color="gray.800">
+                Task Status Distribution
+              </Text>
+              <Box display="flex" justifyContent="center">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={statusChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label
+                    >
+                      {statusChartData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+            </Box>
+
+            <Box
+              bg="white"
+              p={6}
+              rounded="2xl"
+              shadow="md"
+              border="1px"
+              borderColor="gray.100"
+            >
+              <Text fontSize="lg" fontWeight="bold" mb={6} color="gray.800">
+                Completion vs Reopen
+              </Text>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={completionData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#3182CE" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Grid>
         </Box>
       </Box>
-    </Box>
+    </Flex>
   );
 }
