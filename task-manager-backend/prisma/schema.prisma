@@ -7,14 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/* =========================
+   ENUMS
+========================= */
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+/* =========================
+   USER
+========================= */
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
   password  String
-  tasks     Task[]
   createdAt DateTime @default(now())
+
+  // Relations
+  tasks            Task[]
+  auditLogs        AuditLog[]
+  sentInvites      Invite[]        @relation("SentInvites")
+  friends          Friend[]        @relation("UserFriends")
+  friendOf         Friend[]        @relation("FriendUsers")
+  collaborations   TaskCollaborator[]
+  taskActivities   TaskActivity[]
 }
+
+/* =========================
+   TASK
+========================= */
 
 model Task {
   id           Int       @id @default(autoincrement())
@@ -32,19 +63,102 @@ model Task {
   completedAt  DateTime?
   reopenedAt   DateTime?
 
-  // 🗑️ Soft delete
+  // Soft delete
   isDeleted    Boolean   @default(false)
   deletedAt    DateTime?
+
+  // Relations
+  collaborators TaskCollaborator[]
+  activities    TaskActivity[]
 
   @@index([userId])
   @@index([status])
   @@index([priority])
   @@index([isDeleted])
 }
+
+/* =========================
+   FRIEND RELATION
+========================= */
+
+model Friend {
+  id        Int          @id @default(autoincrement())
+  userId    Int
+  friendId  Int
+  status    FriendStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  user   User @relation("UserFriends", fields: [userId], references: [id])
+  friend User @relation("FriendUsers", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+/* =========================
+   INVITE SYSTEM
+========================= */
+
+model Invite {
+  id        Int          @id @default(autoincrement())
+  email     String
+  token     String       @unique
+  senderId  Int
+  status    InviteStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime     @default(now())
+
+  sender User @relation("SentInvites", fields: [senderId], references: [id])
+
+  @@index([email])
+  @@index([token])
+}
+
+/* =========================
+   TASK COLLABORATION
+========================= */
+
+model TaskCollaborator {
+  id     Int @id @default(autoincrement())
+  taskId Int
+  userId Int
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+}
+
+/* =========================
+   TASK ACTIVITY LOG
+========================= */
+
+model TaskActivity {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  userId    Int
+  action    String   // CREATED, UPDATED, COMPLETED, REOPENED
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+/* =========================
+   AUDIT LOG (EXISTING)
+========================= */
+
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    Int
   taskId    Int?
   action    String
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([taskId])
 }

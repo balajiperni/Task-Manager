@@ -41,8 +41,18 @@ export default function Login() {
       // Save JWT token
       localStorage.setItem("token", res.data.token);
 
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // ✅ NEW CODE: Check for pending invite token
+      const pendingInviteToken = sessionStorage.getItem("pendingInviteToken");
+
+      if (pendingInviteToken) {
+        // Clear it from session storage
+        sessionStorage.removeItem("pendingInviteToken");
+        // Redirect to invite acceptance page
+        navigate(`/invite/${pendingInviteToken}`);
+      } else {
+        // Normal login flow - redirect to dashboard
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError("Invalid email or password");
     } finally {

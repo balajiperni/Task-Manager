@@ -1,3 +1,4 @@
+// src/App.js
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
@@ -5,6 +6,8 @@ import Tasks from "./pages/Tasks";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Register from "./pages/Register";
 import Visualizations from "./pages/Visualizations";
+import Friends from "./pages/Friends";
+import AcceptInvite from "./pages/AcceptInvite";
 
 function App() {
   return (
@@ -13,23 +16,15 @@ function App() {
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Login */}
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
-        
-        {/* Register */}
         <Route path="/register" element={<Register />} />
         
-        {/* Protected Visualizations */}
-        <Route
-          path="/visualizations"
-          element={
-            <ProtectedRoute>
-              <Visualizations />
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* Protected Dashboard */}
+        {/* Invite acceptance route - can be accessed without login */}
+        {/* After checking auth, it will redirect to login if needed */}
+        <Route path="/invite/:token" element={<AcceptInvite />} />
+
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -39,7 +34,6 @@ function App() {
           }
         />
 
-        {/* Protected Tasks */}
         <Route
           path="/tasks"
           element={
@@ -49,7 +43,25 @@ function App() {
           }
         />
 
-        {/* Fallback */}
+        <Route
+          path="/visualizations"
+          element={
+            <ProtectedRoute>
+              <Visualizations />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <Friends />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
