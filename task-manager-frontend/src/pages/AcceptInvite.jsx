@@ -11,26 +11,23 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import api from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AcceptInvite() {
   const { token } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
     const authToken = localStorage.getItem("token");
     if (!authToken) {
-      // Store the invite token in sessionStorage to retrieve after login
       sessionStorage.setItem("pendingInviteToken", token);
-      // Redirect to login
       navigate("/login");
       return;
     }
-
-    // Auto-accept the invite if user is logged in
     handleAcceptInvite();
   }, [token]);
 
@@ -40,7 +37,6 @@ export default function AcceptInvite() {
       setSuccess(true);
       setLoading(false);
       
-      // Redirect to friends page after 2 seconds
       setTimeout(() => {
         navigate("/friends");
       }, 2000);
@@ -53,10 +49,9 @@ export default function AcceptInvite() {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
-      <Flex h="100vh" align="center" justify="center" bg="gray.50">
+      <Flex h="100vh" align="center" justify="center" bg={theme.bg.primary}>
         <VStack spacing={6}>
           <Box position="relative">
             <Spinner
@@ -87,10 +82,10 @@ export default function AcceptInvite() {
             </Box>
           </Box>
           <VStack spacing={2}>
-            <Text fontSize="xl" fontWeight="bold" color="gray.800">
+            <Text fontSize="xl" fontWeight="bold" color={theme.text.primary}>
               Processing Invitation
             </Text>
-            <Text fontSize="md" color="gray.600">
+            <Text fontSize="md" color={theme.text.secondary}>
               Please wait while we connect you with your friend...
             </Text>
           </VStack>
@@ -99,12 +94,11 @@ export default function AcceptInvite() {
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <Flex h="100vh" align="center" justify="center" bg="gray.50">
+      <Flex h="100vh" align="center" justify="center" bg={theme.bg.primary}>
         <Box
-          bg="white"
+          bg={theme.bg.card}
           p={8}
           rounded="2xl"
           shadow="xl"
@@ -112,8 +106,9 @@ export default function AcceptInvite() {
           w="full"
           mx={4}
           textAlign="center"
+          border="1px"
+          borderColor={theme.border.primary}
         >
-          {/* Error Icon */}
           <Box
             w={20}
             h={20}
@@ -141,15 +136,13 @@ export default function AcceptInvite() {
             </svg>
           </Box>
 
-          {/* Error Message */}
-          <Heading size="lg" mb={3} color="gray.800">
+          <Heading size="lg" mb={3} color={theme.text.primary}>
             Invalid Invitation
           </Heading>
-          <Text color="gray.600" mb={6} fontSize="md">
+          <Text color={theme.text.secondary} mb={6} fontSize="md">
             {error}
           </Text>
 
-          {/* Actions */}
           <VStack spacing={3}>
             <Button
               colorScheme="blue"
@@ -164,6 +157,8 @@ export default function AcceptInvite() {
               size="lg"
               width="full"
               onClick={() => navigate("/dashboard")}
+              color={theme.text.secondary}
+              _hover={{ bg: theme.bg.hover }}
             >
               Go to Dashboard
             </Button>
@@ -173,11 +168,10 @@ export default function AcceptInvite() {
     );
   }
 
-  // Success state
   return (
-    <Flex h="100vh" align="center" justify="center" bg="gray.50">
+    <Flex h="100vh" align="center" justify="center" bg={theme.bg.primary}>
       <Box
-        bg="white"
+        bg={theme.bg.card}
         p={8}
         rounded="2xl"
         shadow="xl"
@@ -185,8 +179,9 @@ export default function AcceptInvite() {
         w="full"
         mx={4}
         textAlign="center"
+        border="1px"
+        borderColor={theme.border.primary}
       >
-        {/* Success Icon */}
         <Box
           w={20}
           h={20}
@@ -214,22 +209,20 @@ export default function AcceptInvite() {
           </svg>
         </Box>
 
-        {/* Success Message */}
-        <Heading size="lg" mb={3} color="gray.800">
+        <Heading size="lg" mb={3} color={theme.text.primary}>
           Invitation Accepted! 🎉
         </Heading>
-        <Text color="gray.600" mb={2} fontSize="md">
+        <Text color={theme.text.secondary} mb={2} fontSize="md">
           You are now connected with your friend.
         </Text>
-        <Text color="gray.500" fontSize="sm" mb={6}>
+        <Text color={theme.text.tertiary} fontSize="sm" mb={6}>
           Redirecting you to your friends page...
         </Text>
 
-        {/* Progress indicator */}
         <Box
           w="full"
           h="1"
-          bg="gray.200"
+          bg={theme.bg.tertiary}
           rounded="full"
           overflow="hidden"
           mb={6}
@@ -244,7 +237,6 @@ export default function AcceptInvite() {
           />
         </Box>
 
-        {/* Manual navigation button */}
         <Button
           colorScheme="green"
           size="lg"

@@ -1,3 +1,4 @@
+// src/pages/Register.jsx
 import { useState } from "react";
 import {
   Box,
@@ -11,9 +12,12 @@ import {
   Heading,
   Flex,
   Container,
+  IconButton,
+  Tooltip,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -24,6 +28,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const handleRegister = async () => {
     setError("");
@@ -57,7 +62,6 @@ export default function Register() {
         password,
       });
 
-      // After successful register → go to login
       navigate("/login");
     } catch (err) {
       setError("User already exists or invalid data");
@@ -77,28 +81,55 @@ export default function Register() {
       minH="100vh"
       align="center"
       justify="center"
-      bg="gray.50"
-      bgGradient="linear(to-br, blue.50, purple.50)"
+      bg={theme.bg.primary}
+      bgGradient={theme.gradient.bg}
       px={4}
     >
       <Container maxW="md" py={12}>
-        {/* Card Container */}
+        <Flex justify="flex-end" mb={4}>
+          <Tooltip label={theme.isDark ? "Light Mode" : "Dark Mode"}>
+            <IconButton
+              icon={
+                theme.isDark ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )
+              }
+              onClick={theme.toggleTheme}
+              variant="ghost"
+              colorScheme="purple"
+              aria-label="Toggle theme"
+            />
+          </Tooltip>
+        </Flex>
+
         <Box
-          bg="white"
+          bg={theme.bg.card}
           rounded="2xl"
           shadow="2xl"
           p={{ base: 8, md: 10 }}
           border="1px"
-          borderColor="gray.100"
+          borderColor={theme.border.primary}
         >
           <VStack spacing={8} align="stretch">
-            {/* Header */}
             <VStack spacing={4} textAlign="center">
-              {/* Icon */}
               <Box
                 w={20}
                 h={20}
-                bgGradient="linear(to-br, purple.500, pink.600)"
+                bgGradient={theme.gradient.secondary}
                 rounded="2xl"
                 display="flex"
                 alignItems="center"
@@ -130,20 +161,18 @@ export default function Register() {
                 >
                   Create Account
                 </Heading>
-                <Text color="gray.600" fontSize="md">
+                <Text color={theme.text.secondary} fontSize="md">
                   Sign up to get started with your account
                 </Text>
               </VStack>
             </VStack>
 
-            {/* Form */}
             <VStack spacing={5} align="stretch">
-              {/* Name Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Full Name
@@ -180,20 +209,20 @@ export default function Register() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="purple.500"
-                    borderColor="gray.300"
-                    _hover={{
-                      borderColor: "purple.300",
-                    }}
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
+                    _hover={{ borderColor: "purple.300" }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Email Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Email Address
@@ -230,20 +259,20 @@ export default function Register() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="purple.500"
-                    borderColor="gray.300"
-                    _hover={{
-                      borderColor: "purple.300",
-                    }}
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
+                    _hover={{ borderColor: "purple.300" }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Password Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Password
@@ -280,20 +309,20 @@ export default function Register() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="purple.500"
-                    borderColor="gray.300"
-                    _hover={{
-                      borderColor: "purple.300",
-                    }}
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
+                    _hover={{ borderColor: "purple.300" }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Confirm Password Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Confirm Password
@@ -330,22 +359,22 @@ export default function Register() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="purple.500"
-                    borderColor="gray.300"
-                    _hover={{
-                      borderColor: "purple.300",
-                    }}
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
+                    _hover={{ borderColor: "purple.300" }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Terms & Conditions */}
               <Checkbox
                 colorScheme="purple"
                 size="md"
                 isChecked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
               >
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color={theme.text.secondary}>
                   I agree to the{" "}
                   <Link color="purple.600" fontWeight="semibold">
                     Terms and Conditions
@@ -357,12 +386,11 @@ export default function Register() {
                 </Text>
               </Checkbox>
 
-              {/* Error Message */}
               {error && (
                 <Box
-                  bg="red.50"
+                  bg={theme.isDark ? "red.900" : "red.50"}
                   border="1px"
-                  borderColor="red.200"
+                  borderColor={theme.isDark ? "red.700" : "red.200"}
                   borderLeftWidth="4px"
                   borderLeftColor="red.500"
                   rounded="md"
@@ -383,14 +411,13 @@ export default function Register() {
                         />
                       </svg>
                     </Box>
-                    <Text fontSize="sm" color="red.700" fontWeight="medium">
+                    <Text fontSize="sm" color={theme.isDark ? "red.300" : "red.700"} fontWeight="medium">
                       {error}
                     </Text>
                   </HStack>
                 </Box>
               )}
 
-              {/* Register Button */}
               <Button
                 onClick={handleRegister}
                 isLoading={isLoading}
@@ -416,21 +443,19 @@ export default function Register() {
               </Button>
             </VStack>
 
-            {/* Divider */}
             <HStack spacing={4}>
-              <Box flex={1} height="1px" bg="gray.200" />
+              <Box flex={1} height="1px" bg={theme.border.primary} />
               <Text
                 fontSize="sm"
-                color="gray.500"
+                color={theme.text.tertiary}
                 fontWeight="medium"
                 whiteSpace="nowrap"
               >
                 Already have an account?
               </Text>
-              <Box flex={1} height="1px" bg="gray.200" />
+              <Box flex={1} height="1px" bg={theme.border.primary} />
             </HStack>
 
-            {/* Login Link */}
             <Button
               variant="outline"
               size="lg"
@@ -438,7 +463,7 @@ export default function Register() {
               fontWeight="semibold"
               onClick={() => navigate("/login")}
               _hover={{
-                bg: "purple.50",
+                bg: theme.isDark ? "purple.900" : "purple.50",
                 transform: "translateY(-2px)",
                 shadow: "md",
               }}
@@ -449,8 +474,7 @@ export default function Register() {
           </VStack>
         </Box>
 
-        {/* Footer */}
-        <Text textAlign="center" fontSize="xs" color="gray.500" mt={8} px={4}>
+        <Text textAlign="center" fontSize="xs" color={theme.text.tertiary} mt={8} px={4}>
           By creating an account, you agree to our Terms of Service and Privacy
           Policy
         </Text>

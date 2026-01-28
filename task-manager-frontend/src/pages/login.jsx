@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import { useState } from "react";
 import {
   Box,
@@ -11,9 +12,12 @@ import {
   Heading,
   Flex,
   Container,
+  IconButton,
+  Tooltip,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,6 +25,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const handleLogin = async () => {
     setError("");
@@ -38,19 +43,14 @@ export default function Login() {
         password,
       });
 
-      // Save JWT token
       localStorage.setItem("token", res.data.token);
 
-      // ✅ NEW CODE: Check for pending invite token
       const pendingInviteToken = sessionStorage.getItem("pendingInviteToken");
 
       if (pendingInviteToken) {
-        // Clear it from session storage
         sessionStorage.removeItem("pendingInviteToken");
-        // Redirect to invite acceptance page
         navigate(`/invite/${pendingInviteToken}`);
       } else {
-        // Normal login flow - redirect to dashboard
         navigate("/dashboard");
       }
     } catch (err) {
@@ -71,28 +71,56 @@ export default function Login() {
       minH="100vh"
       align="center"
       justify="center"
-      bg="gray.50"
-      bgGradient="linear(to-br, blue.50, purple.50)"
+      bg={theme.bg.primary}
+      bgGradient={theme.gradient.bg}
       px={4}
     >
       <Container maxW="md" py={12}>
-        {/* Card Container */}
+        {/* Theme Toggle */}
+        <Flex justify="flex-end" mb={4}>
+          <Tooltip label={theme.isDark ? "Light Mode" : "Dark Mode"}>
+            <IconButton
+              icon={
+                theme.isDark ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )
+              }
+              onClick={theme.toggleTheme}
+              variant="ghost"
+              colorScheme="blue"
+              aria-label="Toggle theme"
+            />
+          </Tooltip>
+        </Flex>
+
         <Box
-          bg="white"
+          bg={theme.bg.card}
           rounded="2xl"
           shadow="2xl"
           p={{ base: 8, md: 10 }}
           border="1px"
-          borderColor="gray.100"
+          borderColor={theme.border.primary}
         >
           <VStack spacing={8} align="stretch">
-            {/* Header */}
             <VStack spacing={4} textAlign="center">
-              {/* Icon */}
               <Box
                 w={20}
                 h={20}
-                bgGradient="linear(to-br, blue.500, indigo.600)"
+                bgGradient={theme.gradient.primary}
                 rounded="2xl"
                 display="flex"
                 alignItems="center"
@@ -124,20 +152,18 @@ export default function Login() {
                 >
                   Welcome Back
                 </Heading>
-                <Text color="gray.600" fontSize="md">
+                <Text color={theme.text.secondary} fontSize="md">
                   Sign in to your account to continue
                 </Text>
               </VStack>
             </VStack>
 
-            {/* Form */}
             <VStack spacing={5} align="stretch">
-              {/* Email Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Email Address
@@ -156,7 +182,7 @@ export default function Login() {
                       height="20"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#A0AEC0"
+                      stroke={theme.isDark ? "#A0AEC0" : "#A0AEC0"}
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -174,20 +200,22 @@ export default function Login() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="blue.500"
-                    borderColor="gray.300"
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
                     _hover={{
                       borderColor: "blue.300",
                     }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Password Input */}
               <Box>
                 <Text
                   fontSize="sm"
                   fontWeight="semibold"
-                  color="gray.700"
+                  color={theme.text.primary}
                   mb={2}
                 >
                   Password
@@ -206,7 +234,7 @@ export default function Login() {
                       height="20"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#A0AEC0"
+                      stroke={theme.isDark ? "#A0AEC0" : "#A0AEC0"}
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -224,18 +252,20 @@ export default function Login() {
                     size="lg"
                     pl="45px"
                     focusBorderColor="blue.500"
-                    borderColor="gray.300"
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.secondary}
+                    color={theme.text.primary}
                     _hover={{
                       borderColor: "blue.300",
                     }}
+                    _placeholder={{ color: theme.text.tertiary }}
                   />
                 </Box>
               </Box>
 
-              {/* Remember & Forgot */}
               <HStack justify="space-between">
                 <Checkbox colorScheme="blue" size="md" fontWeight="medium">
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color={theme.text.secondary}>
                     Remember me
                   </Text>
                 </Checkbox>
@@ -252,12 +282,11 @@ export default function Login() {
                 </Link>
               </HStack>
 
-              {/* Error Message */}
               {error && (
                 <Box
-                  bg="red.50"
+                  bg={theme.isDark ? "red.900" : "red.50"}
                   border="1px"
-                  borderColor="red.200"
+                  borderColor={theme.isDark ? "red.700" : "red.200"}
                   borderLeftWidth="4px"
                   borderLeftColor="red.500"
                   rounded="md"
@@ -278,14 +307,13 @@ export default function Login() {
                         />
                       </svg>
                     </Box>
-                    <Text fontSize="sm" color="red.700" fontWeight="medium">
+                    <Text fontSize="sm" color={theme.isDark ? "red.300" : "red.700"} fontWeight="medium">
                       {error}
                     </Text>
                   </HStack>
                 </Box>
               )}
 
-              {/* Login Button */}
               <Button
                 onClick={handleLogin}
                 isLoading={isLoading}
@@ -312,21 +340,19 @@ export default function Login() {
               </Button>
             </VStack>
 
-            {/* Divider */}
             <HStack spacing={4}>
-              <Box flex={1} height="1px" bg="gray.200" />
+              <Box flex={1} height="1px" bg={theme.border.primary} />
               <Text
                 fontSize="sm"
-                color="gray.500"
+                color={theme.text.tertiary}
                 fontWeight="medium"
                 whiteSpace="nowrap"
               >
                 New to our platform?
               </Text>
-              <Box flex={1} height="1px" bg="gray.200" />
+              <Box flex={1} height="1px" bg={theme.border.primary} />
             </HStack>
 
-            {/* Register Link */}
             <Button
               variant="outline"
               size="lg"
@@ -334,7 +360,7 @@ export default function Login() {
               fontWeight="semibold"
               onClick={() => navigate("/register")}
               _hover={{
-                bg: "blue.50",
+                bg: theme.isDark ? "blue.900" : "blue.50",
                 transform: "translateY(-2px)",
                 shadow: "md",
               }}
@@ -345,8 +371,7 @@ export default function Login() {
           </VStack>
         </Box>
 
-        {/* Footer */}
-        <Text textAlign="center" fontSize="xs" color="gray.500" mt={8} px={4}>
+        <Text textAlign="center" fontSize="xs" color={theme.text.tertiary} mt={8} px={4}>
           By continuing, you agree to our{" "}
           <Link color="blue.600" fontWeight="semibold">
             Terms of Service

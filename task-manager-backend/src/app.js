@@ -7,6 +7,7 @@ const auditRoutes = require("./routes/audit.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const friendsRoutes = require("./routes/friends.routes");
 const inviteRoutes = require("./routes/invites.routes");
+const aiRoutes = require("./routes/ai.routes");
 const app = express();
 
 app.use(cors());
@@ -18,6 +19,7 @@ app.use("/api/audit-logs", auditRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api/invites", inviteRoutes);
+app.use("/api/ai", aiRoutes);
 app.get("/", (req, res) => res.send("Task Manager API Running"));
 
 module.exports = app;

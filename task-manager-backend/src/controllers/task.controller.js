@@ -1,19 +1,21 @@
 const prisma = require("../config/prisma");
 const { isValidStatusTransition } = require("../utils/statusflow");
 const { logAudit } = require("../utils/auditLogger");
+
 /**
  * CREATE TASK
+ * 🔥 EXTENDED: supports collaborators (friends)
  */
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, priority, dueDate } = req.body;
+    const { title, description, priority, dueDate, collaborators } = req.body;
 
-    // 1️⃣ Validation
+    // 1️⃣ Validation (UNCHANGED)
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
     }
 
-    // 2️⃣ Create task
+    // 2️⃣ Create task (UNCHANGED)
     const task = await prisma.task.create({
       data: {
         title,
@@ -24,28 +26,56 @@ exports.createTask = async (req, res) => {
       }
     });
 
-    // 3️⃣ AUDIT LOG (🔥 EXACT PLACE)
+    /**
+     * 🆕 2.1 ADD COLLABORATORS (ONLY FRIENDS)
+     */
+    if (Array.isArray(collaborators) && collaborators.length > 0) {
+      const friends = await prisma.friend.findMany({
+        where: {
+          userId: req.userId,
+          friendId: { in: collaborators },
+          status: "ACCEPTED"
+        },
+        select: { friendId: true }
+      });
+
+      const validCollaborators = friends.map((f) => ({
+        taskId: task.id,
+        userId: f.friendId
+      }));
+
+      if (validCollaborators.length > 0) {
+        await prisma.taskCollaborator.createMany({
+          data: validCollaborators,
+          skipDuplicates: true
+        });
+      }
+    }
+
+    // 3️⃣ AUDIT LOG (UNCHANGED – 🔥 EXACT PLACE)
     await logAudit({
       userId: req.userId,
       taskId: task.id,
       action: "TASK_CREATED"
     });
 
-    // 4️⃣ Response
+    // 4️⃣ Response (UNCHANGED)
     res.status(201).json(task);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 /**
- * GET ALL TASKS (for logged-in user)
+ * GET ALL TASKS
+ * 🔥 EXTENDED: owner OR collaborator can view
  */
 exports.getTasks = async (req, res) => {
   try {
     const userId = req.userId;
 
-    // Query params
+    // Query params (UNCHANGED)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const status = req.query.status;
@@ -55,36 +85,38 @@ exports.getTasks = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    // Base filter
+    /**
+     * 🆕 Base filter: owner OR collaborator
+     */
     const filters = {
-     userId,
-     isDeleted: false
+      isDeleted: false,
+      OR: [
+        { userId },
+        {
+          collaborators: {
+            some: { userId }
+          }
+        }
+      ]
     };
 
-
-    // Exact filters
+    // Exact filters (UNCHANGED)
     if (status) filters.status = status;
     if (priority) filters.priority = priority;
 
-    // Search filter
+    // Search filter (UNCHANGED)
     if (search) {
-      filters.OR = [
+      filters.AND = [
         {
-          title: {
-            contains: search,
-            mode: "insensitive"
-          }
-        },
-        {
-          description: {
-            contains: search,
-            mode: "insensitive"
-          }
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } }
+          ]
         }
       ];
     }
 
-    // Query DB
+    // Query DB (UNCHANGED STRUCTURE)
     const tasks = await prisma.task.findMany({
       where: filters,
       skip,
@@ -106,33 +138,33 @@ exports.getTasks = async (req, res) => {
   }
 };
 
-
 /**
  * UPDATE TASK
+ * 🔒 Owner-only (UNCHANGED)
  */
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, dueDate, ...rest } = req.body;
 
-    // 1️⃣ Fetch task
+    // 1️⃣ Fetch task (UNCHANGED)
     const task = await prisma.task.findUnique({
       where: { id: Number(id) }
     });
 
-    // 2️⃣ Ownership + existence check
+    // 2️⃣ Ownership + existence check (UNCHANGED)
     if (!task || task.userId !== req.userId || task.isDeleted) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // 3️⃣ Validate status workflow
+    // 3️⃣ Validate status workflow (UNCHANGED)
     if (status && !isValidStatusTransition(task.status, status)) {
       return res.status(400).json({
         message: `Invalid status transition: ${task.status} → ${status}`
       });
     }
 
-    // 4️⃣ Handle status timestamps
+    // 4️⃣ Handle status timestamps (UNCHANGED)
     const timestampUpdates = {};
 
     if (task.status === "Pending" && status === "In Progress") {
@@ -147,7 +179,7 @@ exports.updateTask = async (req, res) => {
       timestampUpdates.reopenedAt = new Date();
     }
 
-    // 5️⃣ Update task
+    // 5️⃣ Update task (UNCHANGED)
     const updatedTask = await prisma.task.update({
       where: { id: Number(id) },
       data: {
@@ -158,7 +190,7 @@ exports.updateTask = async (req, res) => {
       }
     });
 
-    // 6️⃣ AUDIT LOG (🔥 THIS IS WHERE IT GOES)
+    // 6️⃣ AUDIT LOG (UNCHANGED – 🔥 EXACT PLACE)
     await logAudit({
       userId: req.userId,
       taskId: task.id,
@@ -167,15 +199,17 @@ exports.updateTask = async (req, res) => {
         : "TASK_FIELDS_UPDATED"
     });
 
-    // 7️⃣ Response
+    // 7️⃣ Response (UNCHANGED)
     res.json(updatedTask);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 /**
  * DELETE TASK
+ * 🔒 Owner-only (UNCHANGED)
  */
 exports.deleteTask = async (req, res) => {
   try {
@@ -197,7 +231,7 @@ exports.deleteTask = async (req, res) => {
       }
     });
 
-    // 🧾 Audit log
+    // 🧾 Audit log (UNCHANGED)
     await logAudit({
       userId: req.userId,
       taskId: task.id,

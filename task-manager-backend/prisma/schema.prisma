@@ -36,15 +36,15 @@ model User {
   // Relations
   tasks            Task[]
   auditLogs        AuditLog[]
-  sentInvites      Invite[]        @relation("SentInvites")
-  friends          Friend[]        @relation("UserFriends")
-  friendOf         Friend[]        @relation("FriendUsers")
+  sentInvites      Invite[]            @relation("SentInvites")
+  friends          Friend[]            @relation("UserFriends")
+  friendOf         Friend[]            @relation("FriendUsers")
   collaborations   TaskCollaborator[]
   taskActivities   TaskActivity[]
 }
 
 /* =========================
-   TASK
+   TASK (WITH SUBTASK SUPPORT)
 ========================= */
 
 model Task {
@@ -57,6 +57,11 @@ model Task {
   userId       Int
   user         User      @relation(fields: [userId], references: [id])
   createdAt    DateTime  @default(now())
+
+  // 🔥 NEW: Task hierarchy (Subtasks)
+  parentTaskId Int?
+  parentTask   Task?     @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subTasks     Task[]    @relation("TaskHierarchy")
 
   // Status timestamps
   startedAt    DateTime?
@@ -75,6 +80,7 @@ model Task {
   @@index([status])
   @@index([priority])
   @@index([isDeleted])
+  @@index([parentTaskId])
 }
 
 /* =========================
@@ -147,7 +153,7 @@ model TaskActivity {
 }
 
 /* =========================
-   AUDIT LOG (EXISTING)
+   AUDIT LOG
 ========================= */
 
 model AuditLog {
