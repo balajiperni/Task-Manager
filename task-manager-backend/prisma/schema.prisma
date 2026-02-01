@@ -22,6 +22,12 @@ enum InviteStatus {
   EXPIRED
 }
 
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+}
+
 /* =========================
    USER
 ========================= */
@@ -41,27 +47,23 @@ model User {
   friendOf         Friend[]            @relation("FriendUsers")
   collaborations   TaskCollaborator[]
   taskActivities   TaskActivity[]
+  subtaskWorks     SubTaskCollaborator[]
 }
 
 /* =========================
-   TASK (WITH SUBTASK SUPPORT)
+   TASK
 ========================= */
 
 model Task {
-  id           Int       @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   title        String
   description  String?
-  status       String    @default("Pending")
-  priority     String    @default("Medium")
+  status       TaskStatus @default(Pending)
+  priority     String     @default("Medium")
   dueDate      DateTime?
   userId       Int
-  user         User      @relation(fields: [userId], references: [id])
-  createdAt    DateTime  @default(now())
-
-  // 🔥 NEW: Task hierarchy (Subtasks)
-  parentTaskId Int?
-  parentTask   Task?     @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
-  subTasks     Task[]    @relation("TaskHierarchy")
+  user         User       @relation(fields: [userId], references: [id])
+  createdAt    DateTime   @default(now())
 
   // Status timestamps
   startedAt    DateTime?
@@ -69,18 +71,56 @@ model Task {
   reopenedAt   DateTime?
 
   // Soft delete
-  isDeleted    Boolean   @default(false)
+  isDeleted    Boolean    @default(false)
   deletedAt    DateTime?
 
   // Relations
-  collaborators TaskCollaborator[]
-  activities    TaskActivity[]
+  subtasks       SubTask[]
+  collaborators  TaskCollaborator[]
+  activities     TaskActivity[]
 
   @@index([userId])
   @@index([status])
   @@index([priority])
-  @@index([isDeleted])
-  @@index([parentTaskId])
+}
+
+/* =========================
+   SUBTASK (CORE ADDITION)
+========================= */
+
+model SubTask {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(Pending)
+  order       Int
+
+  taskId      Int
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+
+  // Collaboration
+  workers     SubTaskCollaborator[]
+
+  @@index([taskId])
+  @@index([status])
+}
+
+/* =========================
+   SUBTASK COLLABORATION
+========================= */
+
+model SubTaskCollaborator {
+  id        Int @id @default(autoincrement())
+  subTaskId Int
+  userId    Int
+
+  subTask SubTask @relation(fields: [subTaskId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([subTaskId, userId])
 }
 
 /* =========================
@@ -128,7 +168,7 @@ model TaskCollaborator {
   taskId Int
   userId Int
 
-  task Task @relation(fields: [taskId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
 
   @@unique([taskId, userId])
@@ -142,10 +182,10 @@ model TaskActivity {
   id        Int      @id @default(autoincrement())
   taskId    Int
   userId    Int
-  action    String   // CREATED, UPDATED, COMPLETED, REOPENED
+  action    String
   createdAt DateTime @default(now())
 
-  task Task @relation(fields: [taskId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
 
   @@index([taskId])
