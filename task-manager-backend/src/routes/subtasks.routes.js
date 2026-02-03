@@ -8,7 +8,7 @@ const {
   updateSubtask,
   deleteSubtask,
   assignUserToSubtask
-} = require("../controllers/subtask.controller");
+} = require("../controllers/subtasks.controller");
 
 router.post("/tasks/:taskId/subtasks", auth, createSubtask);
 router.get("/tasks/:taskId/subtasks", auth, getSubtasksByTask);
