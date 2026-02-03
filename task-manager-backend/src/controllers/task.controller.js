@@ -1,3 +1,5 @@
+const { generateSubtasks } = require("../services/ml.service");
+
 const prisma = require("../config/prisma");
 const { isValidStatusTransition } = require("../utils/statusflow");
 const { logAudit } = require("../utils/auditLogger");
@@ -16,15 +18,34 @@ exports.createTask = async (req, res) => {
     }
 
     // 2️⃣ Create task (UNCHANGED)
-    const task = await prisma.task.create({
-      data: {
+   // 2️⃣ Create task
+const task = await prisma.task.create({
+  data: {
+    title,
+    description,
+    priority,
+    dueDate: dueDate ? new Date(dueDate) : null,
+    userId: req.userId
+  }
+});
+
+// 🔥 NEW: Generate subtasks using ML
+if (description) {
+  try {
+    const subtasks = await generateSubtasks(description);
+
+    await prisma.subTask.createMany({
+      data: subtasks.map((title, index) => ({
         title,
-        description,
-        priority,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        userId: req.userId
-      }
+        order: index + 1,
+        taskId: task.id
+      }))
     });
+  } catch (mlError) {
+    console.error("ML subtask generation failed:", mlError.message);
+  }
+}
+
 
     /**
      * 🆕 2.1 ADD COLLABORATORS (ONLY FRIENDS)
@@ -58,6 +79,7 @@ exports.createTask = async (req, res) => {
       taskId: task.id,
       action: "TASK_CREATED"
     });
+    
 
     // 4️⃣ Response (UNCHANGED)
     res.status(201).json(task);

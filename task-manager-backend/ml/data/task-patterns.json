@@ -1,0 +1,48 @@
+[
+  {
+    "intent": "study",
+    "examples": [
+      "study for exams",
+      "prepare for test",
+      "revise syllabus"
+    ],
+    "subtasks": [
+      "Create a study plan",
+      "Gather study materials",
+      "Study topic-wise",
+      "Revise important concepts",
+      "Take practice tests"
+    ]
+  },
+  {
+    "intent": "software_project",
+    "examples": [
+      "build a web app",
+      "develop backend system",
+      "create task manager"
+    ],
+    "subtasks": [
+      "Define requirements",
+      "Design database schema",
+      "Set up backend",
+      "Implement APIs",
+      "Build frontend",
+      "Test application"
+    ]
+  },
+  {
+    "intent": "daily_task",
+    "examples": [
+      "clean the house",
+      "organize room",
+      "do household chores"
+    ],
+    "subtasks": [
+      "Prepare cleaning supplies",
+      "Declutter items",
+      "Clean room by room",
+      "Dispose waste",
+      "Organize belongings"
+    ]
+  }
+]
