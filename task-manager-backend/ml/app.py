@@ -4,27 +4,40 @@ import json
 
 app = FastAPI()
 
-class TaskInput(BaseModel):
+# Load patterns
+with open("data/task-patterns.json", "r", encoding="utf-8") as f:
+    patterns = json.load(f)
+
+class TaskRequest(BaseModel):
     description: str
 
+
 @app.post("/generate-subtasks")
-def generate_subtasks(data: TaskInput):
-    description = data.description.lower()
+def generate_subtasks(req: TaskRequest):
+    description = req.description.lower()
+    matched_subtasks = []
 
-    with open("data/task-patterns.json") as f:
-        patterns = json.load(f)
+    for pattern in patterns:
+        examples = pattern.get("examples", [])
+        subtasks = pattern.get("subtasks", [])
 
-    subtasks = []
+        for example in examples:
+            if example.lower() in description:
+                matched_subtasks = subtasks
+                break
 
-    for keyword, tasks in patterns.items():
-        if keyword in description:
-            subtasks.extend(tasks)
+        if matched_subtasks:
+            break
 
-    if not subtasks:
-        subtasks = [
-            "Analyze task requirements",
+    # Fallback if nothing matches
+    if not matched_subtasks:
+        matched_subtasks = [
+            "Understand the task clearly",
             "Break task into smaller steps",
-            "Execute subtasks sequentially"
+            "Execute each step",
+            "Review and complete"
         ]
 
-    return {"subtasks": subtasks}
+    return {
+        "subtasks": matched_subtasks
+    }

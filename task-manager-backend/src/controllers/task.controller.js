@@ -1,5 +1,4 @@
-const { generateSubtasks } = require("../services/ml.service");
-
+const { generateSubtasksFromML } = require("../services/ml.service");
 const prisma = require("../config/prisma");
 const { isValidStatusTransition } = require("../utils/statusflow");
 const { logAudit } = require("../utils/auditLogger");
@@ -10,81 +9,52 @@ const { logAudit } = require("../utils/auditLogger");
  */
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, priority, dueDate, collaborators } = req.body;
+    const { title, description, priority, dueDate } = req.body;
 
-    // 1️⃣ Validation (UNCHANGED)
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
     }
 
-    // 2️⃣ Create task (UNCHANGED)
-   // 2️⃣ Create task
-const task = await prisma.task.create({
-  data: {
-    title,
-    description,
-    priority,
-    dueDate: dueDate ? new Date(dueDate) : null,
-    userId: req.userId
-  }
-});
-
-// 🔥 NEW: Generate subtasks using ML
-if (description) {
-  try {
-    const subtasks = await generateSubtasks(description);
-
-    await prisma.subTask.createMany({
-      data: subtasks.map((title, index) => ({
+    // 1️⃣ Create task
+    const task = await prisma.task.create({
+      data: {
         title,
-        order: index + 1,
-        taskId: task.id
-      }))
-    });
-  } catch (mlError) {
-    console.error("ML subtask generation failed:", mlError.message);
-  }
-}
-
-
-    /**
-     * 🆕 2.1 ADD COLLABORATORS (ONLY FRIENDS)
-     */
-    if (Array.isArray(collaborators) && collaborators.length > 0) {
-      const friends = await prisma.friend.findMany({
-        where: {
-          userId: req.userId,
-          friendId: { in: collaborators },
-          status: "ACCEPTED"
-        },
-        select: { friendId: true }
-      });
-
-      const validCollaborators = friends.map((f) => ({
-        taskId: task.id,
-        userId: f.friendId
-      }));
-
-      if (validCollaborators.length > 0) {
-        await prisma.taskCollaborator.createMany({
-          data: validCollaborators,
-          skipDuplicates: true
-        });
+        description,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        userId: req.userId
       }
-    }
+    });
 
-    // 3️⃣ AUDIT LOG (UNCHANGED – 🔥 EXACT PLACE)
+    // 2️⃣ Audit log
     await logAudit({
       userId: req.userId,
       taskId: task.id,
       action: "TASK_CREATED"
     });
-    
 
-    // 4️⃣ Response (UNCHANGED)
+    // 3️⃣ 🔥 Generate subtasks if description exists
+    if (description) {
+      const subtasks = await generateSubtasksFromML(description);
+
+      if (subtasks.length > 0) {
+        const subtaskData = subtasks.map((title, index) => ({
+          title,
+          order: index + 1,
+          taskId: task.id
+        }));
+
+        await prisma.subTask.createMany({
+          data: subtaskData
+        });
+      }
+    }
+
+    // 4️⃣ Response
     res.status(201).json(task);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -262,6 +232,100 @@ exports.deleteTask = async (req, res) => {
 
     res.json({ message: "Task deleted (soft delete)" });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+exports.getTaskById = async (req, res) => {
+  try {
+    const taskId = Number(req.params.id);
+
+    const task = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        isDeleted: false,
+        OR: [
+          { userId: req.userId }, // owner
+          { collaborators: { some: { userId: req.userId } } } // collaborator
+        ]
+      },
+      include: {
+        subtasks: {
+          orderBy: { order: "asc" }
+        }
+      }
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+exports.generateSubtasksForTask = async (req, res) => {
+  try {
+    const taskId = Number(req.params.id);
+
+    // 1️⃣ Fetch task
+    const task = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        isDeleted: false,
+        OR: [
+          { userId: req.userId },
+          { collaborators: { some: { userId: req.userId } } }
+        ]
+      }
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (!task.description) {
+      return res.status(400).json({ message: "Task has no description" });
+    }
+
+    // 2️⃣ Call ML service
+    const subtasks = await generateSubtasksFromML(task.description);
+
+    if (subtasks.length === 0) {
+      return res.json({ message: "No subtasks generated", subtasks: [] });
+    }
+
+    // 3️⃣ Remove old subtasks (optional but recommended)
+    await prisma.subTask.deleteMany({
+      where: { taskId }
+    });
+
+    // 4️⃣ Save new subtasks
+    const subtaskData = subtasks.map((title, index) => ({
+      title,
+      order: index + 1,
+      taskId
+    }));
+
+    await prisma.subTask.createMany({
+      data: subtaskData
+    });
+
+    // 5️⃣ Audit log
+    await logAudit({
+      userId: req.userId,
+      taskId,
+      action: "SUBTASKS_GENERATED"
+    });
+
+    // 6️⃣ Return response
+    res.json({
+      message: "Subtasks generated successfully",
+      subtasks: subtaskData
+    });
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
