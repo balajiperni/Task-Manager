@@ -1,0 +1,37 @@
+{
+  "study": [
+    [
+      "Create a study plan",
+      "Gather materials",
+      "Study topic-wise",
+      "Revise concepts",
+      "Take mock tests"
+    ]
+  ],
+  "software_project": [
+    [
+      "Define requirements",
+      "Design system architecture",
+      "Set up backend",
+      "Implement APIs",
+      "Build frontend",
+      "Test application"
+    ],
+    [
+      "Design authentication flow",
+      "Create user model",
+      "Hash passwords",
+      "Implement JWT",
+      "Protect routes"
+    ]
+  ],
+  "daily_task": [
+    [
+      "Prepare supplies",
+      "Declutter items",
+      "Clean step by step",
+      "Dispose waste",
+      "Organize items"
+    ]
+  ]
+}

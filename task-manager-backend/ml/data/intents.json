@@ -1,0 +1,32 @@
+[
+  {
+    "intent": "study",
+    "examples": [
+      "study for exams",
+      "prepare for test",
+      "revise syllabus",
+      "learn for finals",
+      "exam preparation"
+    ]
+  },
+  {
+    "intent": "software_project",
+    "examples": [
+      "build a web app",
+      "develop backend system",
+      "create task manager",
+      "build authentication system",
+      "implement login flow"
+    ]
+  },
+  {
+    "intent": "daily_task",
+    "examples": [
+      "clean the house",
+      "organize room",
+      "do household chores",
+      "home cleaning",
+      "daily work"
+    ]
+  }
+]

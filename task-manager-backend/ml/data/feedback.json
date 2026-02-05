@@ -1,0 +1,11 @@
+{
+  "taskDescription": "plan my startup launch",
+  "predictedIntent": "generic",
+  "confidence": 0.31,
+  "generatedSubtasks": [
+    "Understand the goal clearly",
+    "Break the task into smaller steps"
+  ],
+  "userFinalSubtasks": [],
+  "needsLearning": true
+}
