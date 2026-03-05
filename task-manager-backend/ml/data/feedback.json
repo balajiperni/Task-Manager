@@ -1,11 +1,18 @@
-{
-  "taskDescription": "plan my startup launch",
-  "predictedIntent": "generic",
-  "confidence": 0.31,
-  "generatedSubtasks": [
-    "Understand the goal clearly",
-    "Break the task into smaller steps"
-  ],
-  "userFinalSubtasks": [],
-  "needsLearning": true
-}
+[
+  {
+    "description": "plan my startup launch",
+    "predictedIntent": "generic",
+    "confidence": 0.31,
+    "generatedSubtasks": [
+      "Understand the goal clearly",
+      "Break the task into smaller steps"
+    ],
+    "finalSubtasks": [
+      "Market research",
+      "Define MVP",
+      "Prepare pitch deck",
+      "Launch beta"
+    ],
+    "timestamp": "2026-02-06T04:58:59.181337"
+  }
+]

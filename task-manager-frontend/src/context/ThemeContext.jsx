@@ -27,11 +27,11 @@ export const ThemeProvider = ({ children }) => {
     isDark,
     toggleTheme,
     bg: {
-      primary: isDark ? "gray.900" : "gray.50",
+      primary: isDark ? "gray.900" : "white",
       secondary: isDark ? "gray.800" : "white",
-      tertiary: isDark ? "gray.700" : "gray.100",
+      tertiary: isDark ? "gray.700" : "white",
       card: isDark ? "gray.800" : "white",
-      hover: isDark ? "gray.700" : "gray.50",
+      hover: isDark ? "gray.700" : "gray.100",
     },
     text: {
       primary: isDark ? "gray.100" : "gray.800",

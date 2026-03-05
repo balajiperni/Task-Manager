@@ -15,6 +15,14 @@ const theme = extendTheme({
       900: '#0d47a1',
     },
   },
+  styles: {
+    global: (props) => ({
+      body: {
+        bg: props.colorMode === 'dark' ? 'gray.900' : 'white',
+        color: props.colorMode === 'dark' ? 'gray.100' : 'gray.800',
+      },
+    }),
+  },
 });
 
 export default theme;

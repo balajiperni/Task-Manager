@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { updateParentTaskStatus } = require("../utils/taskProgressUpdater");
 
 /**
  * CREATE SUBTASK (Task owner only)
@@ -33,11 +34,16 @@ exports.createSubtask = async (req, res) => {
       }
     });
 
+    // 🔥 Update parent progress
+    await updateParentTaskStatus(Number(taskId));
+
     res.status(201).json(subtask);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * GET SUBTASKS (Owner + collaborators)
@@ -48,9 +54,7 @@ exports.getSubtasksByTask = async (req, res) => {
 
     const task = await prisma.task.findUnique({
       where: { id: Number(taskId) },
-      include: {
-        collaborators: true
-      }
+      include: { collaborators: true }
     });
 
     if (!task || task.isDeleted) {
@@ -81,10 +85,12 @@ exports.getSubtasksByTask = async (req, res) => {
     });
 
     res.json(subtasks);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * UPDATE SUBTASK (Owner + assigned worker)
@@ -125,11 +131,16 @@ exports.updateSubtask = async (req, res) => {
       }
     });
 
+    // 🔥 Auto update parent task progress
+    await updateParentTaskStatus(subtask.taskId);
+
     res.json(updatedSubtask);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * ASSIGN USER TO SUBTASK
@@ -160,10 +171,12 @@ exports.assignUserToSubtask = async (req, res) => {
     });
 
     res.json({ message: "User assigned to subtask" });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * DELETE SUBTASK (Owner only)
@@ -189,7 +202,11 @@ exports.deleteSubtask = async (req, res) => {
       where: { id: Number(id) }
     });
 
+    // 🔥 Update parent task after delete
+    await updateParentTaskStatus(subtask.taskId);
+
     res.json({ message: "Subtask deleted" });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,6 +1,20 @@
 const prisma = require("../config/prisma");
 const { generateSubtasks } = require("../services/ai.service");
 
+// Suggest subtasks during task CREATION (no taskId, no DB write)
+exports.suggestSubtasks = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title) return res.status(400).json({ message: "Title is required" });
+    const result = await generateSubtasks(description || title);
+    const subtasks = result.subtasks || result || [];
+    res.json({ subtasks });
+  } catch (err) {
+    res.status(500).json({ message: "ML service unavailable", error: err.message });
+  }
+};
+
+
 exports.generateAndSaveSubtasks = async (req, res) => {
   try {
     const { taskId } = req.params;

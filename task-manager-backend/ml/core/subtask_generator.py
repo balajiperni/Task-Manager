@@ -1,42 +1,47 @@
 import random
-from utils.file_loader import load_json
-from core.semantic_matcher import detect_intent
+from ml.core.intent_classifier import predict_intent
+from ml.utils.file_loader import load_json
 
-templates = load_json("data/subtask_templates.json")
+TEMPLATES = load_json("data/subtask_templates.json")
 
 GENERIC_SUBTASKS = [
     "Understand the goal clearly",
     "Break the task into smaller steps",
     "Identify required resources",
-    "Work on tasks step by step",
-    "Review progress and improve"
+    "Prioritize the steps",
+    "Work step by step",
+    "Review progress and adjust"
 ]
 
-CONFIDENCE_THRESHOLD = 0.45
+CONFIDENCE_THRESHOLD = 0.50
 
 def generate_subtasks(description: str):
-    intent, confidence = detect_intent(description)
+    intent, confidence = predict_intent(description)
 
-    # ✅ LOW CONFIDENCE → GENERIC FALLBACK
+    # 🔴 LOW CONFIDENCE → GENERIC
     if confidence < CONFIDENCE_THRESHOLD:
         return {
             "intent": "generic",
             "confidence": confidence,
-            "subtasks": GENERIC_SUBTASKS
+            "subtasks": GENERIC_SUBTASKS,
+            "source": "fallback"
         }
 
-    # ✅ EXTRA SAFETY CHECK (VERY IMPORTANT)
-    if intent not in templates:
+    # 🔴 Intent not in templates → GENERIC
+    if intent not in TEMPLATES:
         return {
             "intent": "generic",
             "confidence": confidence,
-            "subtasks": GENERIC_SUBTASKS
+            "subtasks": GENERIC_SUBTASKS,
+            "source": "fallback"
         }
 
-    variant = random.choice(templates[intent])
+    # 🟢 HIGH CONFIDENCE → TEMPLATE
+    variant = random.choice(TEMPLATES[intent])
 
     return {
         "intent": intent,
         "confidence": confidence,
-        "subtasks": variant
+        "subtasks": variant,
+        "source": "ml+template"
     }
