@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from core.feedback_learner import store_feedback
 from pydantic import BaseModel
 from core.subtask_generator import generate_subtasks

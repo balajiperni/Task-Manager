@@ -1,6 +1,6 @@
 import random
-from ml.core.intent_classifier import predict_intent
-from ml.utils.file_loader import load_json
+from core.intent_classifier import predict_intent
+from utils.file_loader import load_json
 
 TEMPLATES = load_json("data/subtask_templates.json")
 

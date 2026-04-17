@@ -1,7 +1,7 @@
 import os
 import joblib
 import torch
-from ml.utils.embeddings import embed_texts
+from utils.embeddings import embed_texts
 
 # -------- PATHS -------- #
 

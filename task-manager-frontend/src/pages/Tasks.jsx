@@ -6,6 +6,7 @@ import {
   Button,
   Input,
   Select,
+  Textarea,
   VStack,
   HStack,
   Heading,
@@ -31,6 +32,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [friends, setFriends] = useState([]);
   const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [newPriority, setNewPriority] = useState("Medium");
   const [newDueDate, setNewDueDate] = useState("");
   const [selectedCollaborators, setSelectedCollaborators] = useState([]);
@@ -39,6 +41,7 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [aiSubtasks, setAiSubtasks] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [saveAiSubtasks, setSaveAiSubtasks] = useState(false);
 
   const navigate = useNavigate();
   const toast = useToast();
@@ -71,19 +74,36 @@ export default function Tasks() {
       return;
     }
     try {
-      await api.post("/tasks", {
+      const taskPayload = {
         title: newTitle,
+        description: newDescription || undefined,
         priority: newPriority,
         dueDate: newDueDate || null,
         collaborators: selectedCollaborators,
-      });
+      };
+
+      // Include AI-generated subtasks if user opted in and they exist
+      if (saveAiSubtasks && aiSubtasks.length > 0) {
+        taskPayload.subtasks = aiSubtasks;
+      }
+
+      await api.post("/tasks", taskPayload);
       setNewTitle("");
+      setNewDescription("");
       setNewPriority("Medium");
       setNewDueDate("");
       setSelectedCollaborators([]);
+      setAiSubtasks([]);
+      setSaveAiSubtasks(false);
       setSelectedTask(null);
       fetchTasks();
-      toast({ title: "Task created successfully", status: "success", duration: 2000, isClosable: true });
+      toast({ 
+        title: "Task created successfully", 
+        description: (saveAiSubtasks && aiSubtasks.length > 0) ? `With ${aiSubtasks.length} AI subtasks` : undefined,
+        status: "success", 
+        duration: 2000, 
+        isClosable: true 
+      });
     } catch (error) {
       toast({ title: "Error creating task", description: error.response?.data?.message || "Please try again", status: "error", duration: 3000, isClosable: true });
     }
@@ -125,7 +145,10 @@ export default function Tasks() {
     setAiLoading(true);
     setAiSubtasks([]);
     try {
-      const res = await api.post("/ai/suggest", { title: newTitle });
+      const res = await api.post("/ai/suggest", {
+        title: newTitle,
+        description: newDescription || newTitle,
+      });
       setAiSubtasks(res.data.subtasks || res.data || []);
     } catch {
       toast({ title: "AI generation failed", description: "Make sure the ML service is running on port 8000", status: "warning", duration: 3000, isClosable: true });
@@ -341,6 +364,7 @@ export default function Tasks() {
             onClick={() => {
               setSelectedTask({ isNew: true });
               setNewTitle("");
+              setNewDescription("");
               setNewPriority("Medium");
               setNewDueDate("");
               setSelectedCollaborators([]);
@@ -439,6 +463,28 @@ export default function Tasks() {
                   />
                 </Box>
 
+                {/* Task Description */}
+                <Box>
+                  <Text fontWeight="semibold" mb={2} color={theme.text.primary} fontSize="sm">
+                    Description
+                    <Text as="span" fontWeight="normal" color={theme.text.tertiary} ml={1}>(optional — helps the AI generate better subtasks)</Text>
+                  </Text>
+                  <Textarea
+                    placeholder="Describe your task in detail..."
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    size="md"
+                    rows={3}
+                    resize="vertical"
+                    focusBorderColor="blue.500"
+                    borderColor={theme.border.secondary}
+                    bg={theme.bg.card}
+                    color={theme.text.primary}
+                    _placeholder={{ color: theme.text.tertiary }}
+                    _hover={{ borderColor: "blue.300" }}
+                  />
+                </Box>
+
                 {/* AI Subtask Generator */}
                 <Box
                   bg={theme.isDark ? "blue.900" : "blue.50"}
@@ -472,35 +518,57 @@ export default function Tasks() {
                       : `${aiSubtasks.length} subtasks suggested:`}
                   </Text>
                   {aiSubtasks.length > 0 && (
-                    <VStack spacing={2} align="stretch">
-                      {aiSubtasks.map((sub, i) => (
-                        <HStack
-                          key={i}
-                          bg={theme.bg.card}
-                          border="1px"
-                          borderColor={theme.isDark ? "blue.700" : "blue.100"}
-                          rounded="lg"
-                          p={3}
-                          spacing={3}
-                        >
-                          <Box
-                            w={6}
-                            h={6}
-                            bg={theme.isDark ? "blue.800" : "blue.100"}
-                            rounded="full"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            flexShrink={0}
+                    <>
+                      <VStack spacing={2} align="stretch" mb={3}>
+                        {aiSubtasks.map((sub, i) => (
+                          <HStack
+                            key={i}
+                            bg={theme.bg.card}
+                            border="1px"
+                            borderColor={theme.isDark ? "blue.700" : "blue.100"}
+                            rounded="lg"
+                            p={3}
+                            spacing={3}
                           >
-                            <Text fontSize="xs" fontWeight="bold" color="blue.500">{i + 1}</Text>
-                          </Box>
-                          <Text fontSize="sm" color={theme.text.primary}>
-                            {typeof sub === "string" ? sub : sub.title || sub.name || JSON.stringify(sub)}
-                          </Text>
-                        </HStack>
-                      ))}
-                    </VStack>
+                            <Box
+                              w={6}
+                              h={6}
+                              bg={theme.isDark ? "blue.800" : "blue.100"}
+                              rounded="full"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                              flexShrink={0}
+                            >
+                              <Text fontSize="xs" fontWeight="bold" color="blue.500">{i + 1}</Text>
+                            </Box>
+                            <Text fontSize="sm" color={theme.text.primary}>
+                              {typeof sub === "string" ? sub : sub.title || sub.name || JSON.stringify(sub)}
+                            </Text>
+                          </HStack>
+                        ))}
+                      </VStack>
+                      <HStack 
+                        bg={theme.isDark ? "blue.800" : "blue.100"}
+                        p={2}
+                        rounded="lg"
+                        spacing={2}
+                        onClick={() => setSaveAiSubtasks(!saveAiSubtasks)}
+                        cursor="pointer"
+                        _hover={{ bg: theme.isDark ? "blue.700" : "blue.150" }}
+                        transition="background 0.2s"
+                      >
+                        <Checkbox
+                          isChecked={saveAiSubtasks}
+                          onChange={() => setSaveAiSubtasks(!saveAiSubtasks)}
+                          colorScheme="blue"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <Text fontSize="xs" color={theme.isDark ? "blue.300" : "blue.700"} fontWeight="medium">
+                          Save these subtasks with the task
+                        </Text>
+                      </HStack>
+                    </>
                   )}
                 </Box>
 

@@ -5,11 +5,11 @@ const { logAudit } = require("../utils/auditLogger");
 
 /**
  * CREATE TASK
- * 🔥 EXTENDED: supports collaborators (friends)
+ * 🔥 EXTENDED: supports collaborators (friends) and AI-generated subtasks
  */
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, priority, dueDate } = req.body;
+    const { title, description, priority, dueDate, subtasks: providedSubtasks } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
@@ -33,25 +33,34 @@ exports.createTask = async (req, res) => {
       action: "TASK_CREATED"
     });
 
-    // 3️⃣ 🔥 Generate subtasks if description exists
-    if (description) {
-      const subtasks = await generateSubtasksFromML(description);
-
-      if (subtasks.length > 0) {
-        const subtaskData = subtasks.map((title, index) => ({
-          title,
-          order: index + 1,
-          taskId: task.id
-        }));
-
-        await prisma.subTask.createMany({
-          data: subtaskData
-        });
-      }
+    // 3️⃣ Handle subtasks (either provided from frontend or generate from ML)
+    let subtasks = providedSubtasks || [];
+    
+    // If subtasks provided from frontend, use them; otherwise generate from ML
+    if (subtasks.length === 0 && description) {
+      subtasks = await generateSubtasksFromML(description);
     }
 
-    // 4️⃣ Response
-    res.status(201).json(task);
+    if (subtasks.length > 0) {
+      const subtaskData = subtasks.map((subtaskTitle, index) => ({
+        title: typeof subtaskTitle === "string" ? subtaskTitle : subtaskTitle.title || "",
+        description: typeof subtaskTitle === "object" ? subtaskTitle.description || "" : "",
+        order: index + 1,
+        taskId: task.id
+      }));
+
+      await prisma.subTask.createMany({
+        data: subtaskData
+      });
+    }
+
+    // 4️⃣ Response with created subtasks
+    const createdTask = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: { subtasks: true }
+    });
+
+    res.status(201).json(createdTask);
 
   } catch (err) {
     console.error(err);
