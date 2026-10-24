@@ -138,25 +138,60 @@ export default function Tasks() {
   };
 
   const generateAiSubtasks = async () => {
-    if (!newTitle.trim()) {
-      toast({ title: "Enter a task title first", status: "warning", duration: 2000, isClosable: true });
-      return;
-    }
-    setAiLoading(true);
-    setAiSubtasks([]);
-    try {
-      const res = await api.post("/ai/suggest", {
-        title: newTitle,
-        description: newDescription || newTitle,
-      });
-      setAiSubtasks(res.data.subtasks || res.data || []);
-    } catch {
-      toast({ title: "AI generation failed", description: "Make sure the ML service is running on port 8000", status: "warning", duration: 3000, isClosable: true });
-    } finally {
-      setAiLoading(false);
-    }
-  };
+  if (!newTitle.trim()) {
+    toast({
+      title: "Enter a task title first",
+      status: "warning",
+      duration: 2000,
+      isClosable: true,
+    });
+    return;
+  }
 
+  setAiLoading(true);
+  setAiSubtasks([]);
+
+  try {
+    const res = await api.post("/ai/suggest", {
+      title: newTitle.trim(),
+      description: newDescription.trim() || newTitle.trim(),
+    });
+
+    const suggestions = Array.isArray(res.data.subtasks)
+      ? res.data.subtasks
+      : [];
+
+    setAiSubtasks(suggestions);
+
+    toast({
+      title: "Subtasks generated",
+      description:
+        res.data.source === "fallback"
+          ? "The built-in task generator was used."
+          : "Phi-3 generated your task suggestions.",
+      status: "success",
+      duration: 2500,
+      isClosable: true,
+    });
+  } catch (error) {
+    console.error(
+      "AI subtask generation error:",
+      error.response?.data || error.message
+    );
+
+    toast({
+      title: "AI generation failed",
+      description:
+        error.response?.data?.message ||
+        "Check that Ollama, FastAPI, and the Node.js backend are running.",
+      status: "error",
+      duration: 4000,
+      isClosable: true,
+    });
+  } finally {
+    setAiLoading(false);
+  }
+};
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "High": return "red";
